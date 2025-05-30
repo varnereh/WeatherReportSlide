@@ -4,3 +4,21 @@ Sub InsertWeatherSlide()
     Dim stationID As String
     stationID = "KBDL" ' <-- Change this to another station ID if needed
     url = "https://forecast.weather.gov/xml/current_obs/" & stationID & ".xml"
+
+    ' Download and load XML
+    Set xml = CreateObject("MSXML2.DOMDocument.6.0")
+    xml.async = False
+    xml.Load url
+
+    If xml.ParseError.ErrorCode <> 0 Then
+        MsgBox "XML load error"
+        Exit Sub
+    End If
+
+    ' Extract data
+    Dim location As String: location = GetXmlValue(xml, "location")
+    Dim temperature As String: temperature = GetXmlValue(xml, "temperature_string")
+    Dim weather As String: weather = GetXmlValue(xml, "weather")
+    Dim humidity As String: humidity = GetXmlValue(xml, "relative_humidity") & "%"
+    Dim wind As String: wind = GetXmlValue(xml, "wind_string")
+    Dim obsTime As String: obsTime = GetXmlValue(xml, "observation_time")
