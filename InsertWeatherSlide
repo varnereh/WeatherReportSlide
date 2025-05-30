@@ -38,3 +38,10 @@ Sub InsertWeatherSlide()
     "Wind: " & wind
 End Sub
 
+Function GetXmlValue(xml As Object, tagName As String) As String
+    On Error Resume Next
+    GetXmlValue = xml.SelectSingleNode("//" & tagName).Text
+    If GetXmlValue = "" Then GetXmlValue = "N/A"
+End Function
+
+
