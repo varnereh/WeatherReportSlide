@@ -23,19 +23,20 @@ Sub InsertWeatherSlide()
     Dim wind As String: wind = GetXmlValue(xml, "wind_string")
     Dim obsTime As String: obsTime = GetXmlValue(xml, "observation_time")
 
-    ' Update slide and populate with weather data
+    ' Update named text boxes on slide 1
     Dim sld As Slide
-    ' Updates (in this case) slide 1 (potentially necessary todo based on customer slideshow)
     Set sld = ActivePresentation.Slides(1)
 
-    ' Set text on existing placeholders or text boxes
-    sld.Shapes(1).TextFrame.TextRange.Text = "Weather for " & location
-    sld.Shapes(2).TextFrame.TextRange.Text = _
-    "Observation Time: " & obsTime & vbCrLf & _
-    "Temperature: " & temperature & vbCrLf & _
-    "Weather: " & weather & vbCrLf & _
-    "Humidity: " & humidity & vbCrLf & _
-    "Wind: " & wind
+    On Error Resume Next ' Avoids crashing if a shape isn't found
+
+    sld.Shapes("WeatherForBox").TextFrame.TextRange.Text = "Weather for " & location
+    sld.Shapes("TimeBox").TextFrame.TextRange.Text = obsTime
+    sld.Shapes("TemperatureBox").TextFrame.TextRange.Text = temperature
+    sld.Shapes("WeatherBox").TextFrame.TextRange.Text = weather
+    sld.Shapes("HumidityBox").TextFrame.TextRange.Text = humidity
+    sld.Shapes("WindBox").TextFrame.TextRange.Text = wind
+
+    On Error GoTo 0 ' Resume normal error handling
 End Sub
 
 Function GetXmlValue(xml As Object, tagName As String) As String
@@ -43,5 +44,3 @@ Function GetXmlValue(xml As Object, tagName As String) As String
     GetXmlValue = xml.SelectSingleNode("//" & tagName).Text
     If GetXmlValue = "" Then GetXmlValue = "N/A"
 End Function
-
-
