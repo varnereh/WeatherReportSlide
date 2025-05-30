@@ -113,8 +113,3 @@ Sub SafeSetText(sld As Slide, shapeName As String, text As String)
     End If
 End Sub
 
-
-Sub ScheduleWeatherUpdate()
-    Application.OnTime Now + TimeValue("00:05:00"), "InsertWeatherSlide"
-End Sub
-
