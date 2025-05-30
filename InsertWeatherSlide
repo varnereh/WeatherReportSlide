@@ -1,0 +1,6 @@
+Sub InsertWeatherSlide()
+    Dim xml As Object
+    Dim url As String
+    Dim stationID As String
+    stationID = "KBDL" ' <-- Change this to another station ID if needed
+    url = "https://forecast.weather.gov/xml/current_obs/" & stationID & ".xml"
