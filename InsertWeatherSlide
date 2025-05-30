@@ -22,3 +22,19 @@ Sub InsertWeatherSlide()
     Dim humidity As String: humidity = GetXmlValue(xml, "relative_humidity") & "%"
     Dim wind As String: wind = GetXmlValue(xml, "wind_string")
     Dim obsTime As String: obsTime = GetXmlValue(xml, "observation_time")
+
+    ' Update slide and populate with weather data
+    Dim sld As Slide
+    ' Updates (in this case) slide 1 (potentially necessary todo based on customer slideshow)
+    Set sld = ActivePresentation.Slides(1)
+
+    ' Set text on existing placeholders or text boxes
+    sld.Shapes(1).TextFrame.TextRange.Text = "Weather for " & location
+    sld.Shapes(2).TextFrame.TextRange.Text = _
+    "Observation Time: " & obsTime & vbCrLf & _
+    "Temperature: " & temperature & vbCrLf & _
+    "Weather: " & weather & vbCrLf & _
+    "Humidity: " & humidity & vbCrLf & _
+    "Wind: " & wind
+End Sub
+
