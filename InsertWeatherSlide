@@ -27,7 +27,7 @@ Sub InsertWeatherSlide()
     Dim sld As Slide
     Set sld = ActivePresentation.Slides(1)
 
-    SafeSetText sld, "WeatherForBox", "Weather for " & location
+    SafeSetText sld, "WeatherForBox", location
     SafeSetText sld, "TimeBox", obsTime
     SafeSetText sld, "TemperatureBox", temperature
     SafeSetText sld, "WeatherBox", weather
@@ -43,7 +43,7 @@ Sub InsertForecastData(sld As Slide)
     lat = "40.1445": lon = "-84.2427" ' Piqua, OH
 
     Dim url As String
-    url = "https://graphical.weather.gov/xml/sample_products/browser_interface/ndfdXMLclient.php?lat=" & lat & "&lon=" & lon & "&product=time-series&wx=wx&numDays=7"
+    url = "https://forecast.weather.gov/MapClick.php?lat=" & lat & "&lon=" & lon & "&FcstType=dwml"
 
     Set xml = CreateObject("MSXML2.DOMDocument.6.0")
     xml.async = False
@@ -54,44 +54,76 @@ Sub InsertForecastData(sld As Slide)
         Exit Sub
     End If
 
-    Dim conds As Object
-    Set conds = xml.getElementsByTagName("weather-conditions")
+    Dim texts As Object
+    Set texts = xml.getElementsByTagName("text")
+    Dim timeNodes As Object
+    Set timeNodes = xml.getElementsByTagName("start-valid-time")
 
-    If conds Is Nothing Or conds.Length = 0 Then
+    If texts Is Nothing Or texts.Length = 0 Then
         MsgBox "No forecast data found."
         Exit Sub
     End If
 
+    ' Determine if it’s currently day or night based on hour
+    Dim isDaytime As Boolean
+    Dim currentHour As Integer
+    currentHour = Hour(Now)
+    isDaytime = (currentHour >= 6 And currentHour < 18)
+
     Dim i As Integer
     For i = 0 To 6
-        If i >= conds.Length Then Exit For
+        If i >= texts.Length Then Exit For
 
-        Dim wx As String: wx = "No forecast"
-        Dim valNodes As Object
-        Set valNodes = conds.Item(i).getElementsByTagName("value")
-
-        If Not valNodes Is Nothing And valNodes.Length > 0 Then
-            wx = ""
-            Dim j As Integer
-            For j = 0 To valNodes.Length - 1
-                Dim valNode As Object: Set valNode = valNodes.Item(j)
-                If Not valNode Is Nothing Then
-                    Dim c As String, i_ As String, w As String
-                    If Not valNode.Attributes.getNamedItem("coverage") Is Nothing Then c = valNode.Attributes.getNamedItem("coverage").text Else c = ""
-                    If Not valNode.Attributes.getNamedItem("intensity") Is Nothing Then i_ = valNode.Attributes.getNamedItem("intensity").text Else i_ = ""
-                    If Not valNode.Attributes.getNamedItem("weather-type") Is Nothing Then w = valNode.Attributes.getNamedItem("weather-type").text Else w = ""
-                    wx = wx & c & " " & i_ & " " & w & vbCrLf
-                End If
-            Next j
-        End If
+        Dim wx As String
+        wx = texts.Item(i).text
 
         Dim dayName As String
-        dayName = WeekdayName((Weekday(Date) + i - 1) Mod 7 + 1, True)
+        If Not timeNodes Is Nothing And i < timeNodes.Length Then
+            dayName = timeNodes.Item(i).Attributes.getNamedItem("period-name").text
+        Else
+            dayName = WeekdayName((Weekday(Date) + i - 1) Mod 7 + 1, True)
+        End If
 
+        ' === Emoji matching logic ===
+        Dim emojiUrl As String: emojiUrl = ""
+        Dim wxLower As String: wxLower = LCase(wx)
+
+        If InStr(wxLower, "snow") > 0 Or InStr(wxLower, "flurries") > 0 Then
+            emojiUrl = IIf(isDaytime, "https://img.icons8.com/?size=100&id=qlJRoffslNg7&format=png&color=000000", "https://img.icons8.com/?size=100&id=qlJRoffslNg7&format=png&color=000000")
+        ElseIf InStr(wxLower, "clear") > 0 Then
+            emojiUrl = IIf(isDaytime, "https://img.icons8.com/?size=100&id=8EUmYhfLPTCF&format=png&color=000000", "https://img.icons8.com/?size=100&id=Opvt5B6x4fI4&format=png&color=000000")
+        ElseIf InStr(wxLower, "rain") > 0 Or InStr(wxLower, "showers") > 0 Then
+            emojiUrl = IIf(isDaytime, "https://img.icons8.com/?size=100&id=R1kPtXvDMnWj&format=png&color=000000", "https://img.icons8.com/?size=100&id=R1kPtXvDMnWj&format=png&color=000000")
+        ElseIf InStr(wxLower, "cloud") > 0 Then
+            emojiUrl = IIf(isDaytime, "https://img.icons8.com/?size=100&id=zIVmoh4T8wh7&format=png&color=000000", "https://img.icons8.com/?size=100&id=VT8HlhlnhUwL&format=png&color=000000")
+        ElseIf InStr(wxLower, "storm") > 0 Or InStr(wxLower, "thunder") > 0 Then
+            emojiUrl = IIf(isDaytime, "https://img.icons8.com/?size=100&id=6AAyqKfBlzoB&format=png&color=000000", "https://img.icons8.com/?size=100&id=6AAyqKfBlzoB&format=png&color=000000")
+        ElseIf InStr(wxLower, "fog") > 0 Or InStr(wxLower, "haze") > 0 Or InStr(wxLower, "mist") > 0 Then
+            emojiUrl = IIf(isDaytime, "https://img.icons8.com/?size=100&id=39432&format=png&color=000000", "https://img.icons8.com/?size=100&id=7tEHHH5dn7A3&format=png&color=000000")
+        ElseIf InStr(wxLower, "hail") > 0 Or InStr(wxLower, "sleet") > 0 Then
+            emojiUrl = IIf(isDaytime, "https://img.icons8.com/?size=100&id=39329&format=png&color=000000", "https://img.icons8.com/?size=100&id=39329&format=png&color=000000")
+        ElseIf InStr(wxLower, "sun") > 0 Then
+            emojiUrl = IIf(isDaytime, "https://img.icons8.com/?size=100&id=8EUmYhfLPTCF&format=png&color=000000", "https://img.icons8.com/?size=100&id=8EUmYhfLPTCF&format=png&color=000000")
+        ElseIf InStr(wxLower, "overcast") > 0 Or InStr(wxLower, "cast") > 0 Then
+            emojiUrl = IIf(isDaytime, "https://img.icons8.com/?size=100&id=W8fUZZSmXssu&format=png&color=000000", "https://img.icons8.com/?size=100&id=W8fUZZSmXssu&format=png&color=000000")
+        End If
+
+        ' === Apply to PowerPoint slide ===
         SafeSetText sld, "Day" & (i + 1) & "Box", dayName
         SafeSetText sld, "Day" & (i + 1) & "CondBox", wx
+
+        If emojiUrl <> "" Then
+            On Error Resume Next
+            Dim emojiShape As Shape
+            Set emojiShape = sld.Shapes.AddPicture(emojiUrl, _
+                msoFalse, msoCTrue, _
+                60 + (i * 110), 420, 50, 50)
+            On Error GoTo 0
+        End If
     Next i
 End Sub
+
+
 
 Function GetXmlValue(xml As Object, tagName As String) As String
     Dim node As Object
