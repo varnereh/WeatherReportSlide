@@ -2,10 +2,9 @@ Sub InsertWeatherSlide()
     Dim xml As Object
     Dim url As String
     Dim stationID As String
-    stationID = "KDAY" ' Dayton Intl Airport — closest to Piqua, OH
+    stationID = "KDAY"
     url = "https://forecast.weather.gov/xml/current_obs/" & stationID & ".xml"
 
-    ' Load XML
     Set xml = CreateObject("MSXML2.DOMDocument.6.0")
     xml.async = False
     xml.Load url
@@ -15,7 +14,6 @@ Sub InsertWeatherSlide()
         Exit Sub
     End If
 
-    ' Extract current condition data
     Dim location As String: location = GetXmlValue(xml, "location")
     Dim temperature As String: temperature = GetXmlValue(xml, "temperature_string")
     Dim weather As String: weather = GetXmlValue(xml, "weather")
@@ -23,7 +21,6 @@ Sub InsertWeatherSlide()
     Dim wind As String: wind = GetXmlValue(xml, "wind_string")
     Dim obsTime As String: obsTime = GetXmlValue(xml, "observation_time")
 
-    ' Update slide shapes
     Dim sld As Slide
     Set sld = ActivePresentation.Slides(1)
 
@@ -34,13 +31,26 @@ Sub InsertWeatherSlide()
     SafeSetText sld, "HumidityBox", "Humidity: " & humidity
     SafeSetText sld, "WindBox", "Wind: " & wind
 
-    ' Add forecast data
+    Call ClearOldForecastImages(sld)
     Call InsertForecastData(sld)
+    Call StartCarouselLoop
 End Sub
+
+Sub ClearOldForecastImages(sld As Slide)
+    Dim shp As Shape
+    Dim i As Integer
+    For i = sld.Shapes.Count To 1 Step -1
+        Set shp = sld.Shapes(i)
+        If InStr(shp.Name, "ForecastImage") > 0 Then
+            shp.Delete
+        End If
+    Next i
+End Sub
+
 Sub InsertForecastData(sld As Slide)
     Dim xml As Object
     Dim lat As String, lon As String
-    lat = "40.1445": lon = "-84.2427" ' Piqua, OH
+    lat = "40.1445": lon = "-84.2427"
 
     Dim url As String
     url = "https://forecast.weather.gov/MapClick.php?lat=" & lat & "&lon=" & lon & "&FcstType=dwml"
@@ -64,19 +74,14 @@ Sub InsertForecastData(sld As Slide)
         Exit Sub
     End If
 
-    ' Determine if it’s currently day or night based on hour
     Dim isDaytime As Boolean
-    Dim currentHour As Integer
-    currentHour = Hour(Now)
-    isDaytime = (currentHour >= 6 And currentHour < 18)
+    isDaytime = (Hour(Now) >= 6 And Hour(Now) < 18)
 
     Dim i As Integer
     For i = 0 To 6
         If i >= texts.Length Then Exit For
 
-        Dim wx As String
-        wx = texts.Item(i).text
-
+        Dim wx As String: wx = texts.Item(i).text
         Dim dayName As String
         If Not timeNodes Is Nothing And i < timeNodes.Length Then
             dayName = timeNodes.Item(i).Attributes.getNamedItem("period-name").text
@@ -84,7 +89,6 @@ Sub InsertForecastData(sld As Slide)
             dayName = WeekdayName((Weekday(Date) + i - 1) Mod 7 + 1, True)
         End If
 
-        ' === Emoji matching logic ===
         Dim emojiUrl As String: emojiUrl = ""
         Dim wxLower As String: wxLower = LCase(wx)
 
@@ -108,22 +112,102 @@ Sub InsertForecastData(sld As Slide)
             emojiUrl = IIf(isDaytime, "https://img.icons8.com/?size=100&id=W8fUZZSmXssu&format=png&color=000000", "https://img.icons8.com/?size=100&id=W8fUZZSmXssu&format=png&color=000000")
         End If
 
-        ' === Apply to PowerPoint slide ===
         SafeSetText sld, "Day" & (i + 1) & "Box", dayName
         SafeSetText sld, "Day" & (i + 1) & "CondBox", wx
 
+        Dim groupName As String
+        groupName = "Day" & (i + 1) & "Group"
+        
+        ' Remove any existing picture from the group
+        On Error Resume Next
+        Dim g As Shape
+        Set g = sld.Shapes(groupName)
+        If Not g Is Nothing Then
+            Dim child As Shape
+            Dim k As Integer
+            For k = g.groupItems.Count To 1 Step -1
+                Set child = g.groupItems(k)
+                If child.Type = msoPicture Then
+                    child.Delete
+                End If
+            Next k
+        End If
+        On Error GoTo 0
+        
+        ' Add new picture and group it with existing group
         If emojiUrl <> "" Then
-            On Error Resume Next
-            Dim emojiShape As Shape
-            Set emojiShape = sld.Shapes.AddPicture(emojiUrl, _
-                msoFalse, msoCTrue, _
-                60 + (i * 110), 420, 50, 50)
-            On Error GoTo 0
+            Dim newImg As Shape
+            Set newImg = sld.Shapes.AddPicture(emojiUrl, msoFalse, msoCTrue, 60, 420, 50, 50)
+            newImg.Name = "ForecastImage" & (i + 1)
+            
+            ' Ungroup the existing group, re-group with new image
+            If Not g Is Nothing Then
+                Dim names() As String
+                Dim x As Integer
+                ReDim names(g.groupItems.Count)
+        
+                For x = 1 To g.groupItems.Count
+                    names(x - 1) = g.groupItems(x).Name
+                Next x
+        
+                g.Ungroup
+                ReDim Preserve names(UBound(names) + 1)
+                names(UBound(names)) = newImg.Name
+        
+                Dim newGroup As Shape
+                Set newGroup = sld.Shapes.Range(names).Group
+                newGroup.Name = groupName
+                newGroup.Visible = IIf(i = 0, msoTrue, msoFalse)
+            End If
+        End If
+
+
+        ' Make group visible or hidden
+        Dim groupName As String
+        groupName = "Day" & (i + 1) & "Group"
+
+        On Error Resume Next
+        With sld.Shapes(groupName)
+            .Visible = IIf(i = 0, msoTrue, msoFalse)
+        End With
+        On Error GoTo 0
+    Next i
+End Sub
+
+Sub StartCarouselLoop()
+    Do
+        Call AnimateForecastGroups
+    Loop
+End Sub
+
+Sub AnimateForecastGroups()
+    Dim sld As Slide
+    Set sld = ActivePresentation.Slides(1)
+    Dim i As Integer
+    For i = 1 To 7
+        Dim groupName As String: groupName = "Day" & i & "Group"
+        Dim shp As Shape
+        On Error Resume Next
+        Set shp = sld.Shapes(groupName)
+        On Error GoTo 0
+        If Not shp Is Nothing Then
+            Dim seq As Sequence
+            Set seq = sld.TimeLine.MainSequence
+            shp.Visible = msoTrue
+            seq.AddEffect shp, msoAnimEffectFade, , msoAnimTriggerAfterPrevious
+            Pause 5
+            shp.Visible = msoFalse
+            
         End If
     Next i
 End Sub
 
-
+Sub Pause(seconds As Double)
+    Dim endTime As Double: endTime = Timer + seconds
+    Do While Timer < endTime
+        DoEvents
+    Loop
+End Sub
 
 Function GetXmlValue(xml As Object, tagName As String) As String
     Dim node As Object
@@ -137,9 +221,7 @@ End Function
 
 Sub SafeSetText(sld As Slide, shapeName As String, text As String)
     Dim shp As Shape
-    ' On Error Resume Next
     Set shp = sld.Shapes(shapeName)
-    ' On Error GoTo 0
     If Not shp Is Nothing Then
         shp.TextFrame.TextRange.text = text
     End If
