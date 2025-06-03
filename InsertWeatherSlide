@@ -246,24 +246,24 @@ Sub UpdateCurrentConditionImage(sld As Slide, weather As String)
     Dim isDaytime As Boolean
     isDaytime = (Hour(Now) >= 6 And Hour(Now) < 18)
 
-    If InStr(wxLower, "snow") > 0 Or InStr(wxLower, "flurries") > 0 Then
+    If InStr(wxLower, "hail") > 0 Or InStr(wxLower, "sleet") > 0 Then
+        emojiUrl = IIf(isDaytime, "https://img.icons8.com/?size=100&id=39329&format=png&color=000000", "https://img.icons8.com/?size=100&id=39329&format=png&color=000000")
+    ElseIf InStr(wxLower, "snow") > 0 Or InStr(wxLower, "flurries") > 0 Then
         emojiUrl = IIf(isDaytime, "https://img.icons8.com/?size=100&id=qlJRoffslNg7&format=png&color=000000", "https://img.icons8.com/?size=100&id=qlJRoffslNg7&format=png&color=000000")
+    ElseIf InStr(wxLower, "storm") > 0 Or InStr(wxLower, "thunder") > 0 Then
+        emojiUrl = IIf(isDaytime, "https://img.icons8.com/?size=100&id=6AAyqKfBlzoB&format=png&color=000000", "https://img.icons8.com/?size=100&id=6AAyqKfBlzoB&format=png&color=000000")
+    ElseIf InStr(wxLower, "overcast") > 0 Or InStr(wxLower, "cast") > 0 Then
+        emojiUrl = IIf(isDaytime, "https://img.icons8.com/?size=100&id=W8fUZZSmXssu&format=png&color=000000", "https://img.icons8.com/?size=100&id=W8fUZZSmXssu&format=png&color=000000")
     ElseIf InStr(wxLower, "clear") > 0 Then
         emojiUrl = IIf(isDaytime, "https://img.icons8.com/?size=100&id=8EUmYhfLPTCF&format=png&color=000000", "https://img.icons8.com/?size=100&id=Opvt5B6x4fI4&format=png&color=000000")
     ElseIf InStr(wxLower, "rain") > 0 Or InStr(wxLower, "showers") > 0 Then
         emojiUrl = IIf(isDaytime, "https://img.icons8.com/?size=100&id=R1kPtXvDMnWj&format=png&color=000000", "https://img.icons8.com/?size=100&id=R1kPtXvDMnWj&format=png&color=000000")
     ElseIf InStr(wxLower, "cloud") > 0 Then
         emojiUrl = IIf(isDaytime, "https://img.icons8.com/?size=100&id=zIVmoh4T8wh7&format=png&color=000000", "https://img.icons8.com/?size=100&id=VT8HlhlnhUwL&format=png&color=000000")
-    ElseIf InStr(wxLower, "storm") > 0 Or InStr(wxLower, "thunder") > 0 Then
-        emojiUrl = IIf(isDaytime, "https://img.icons8.com/?size=100&id=6AAyqKfBlzoB&format=png&color=000000", "https://img.icons8.com/?size=100&id=6AAyqKfBlzoB&format=png&color=000000")
     ElseIf InStr(wxLower, "fog") > 0 Or InStr(wxLower, "haze") > 0 Or InStr(wxLower, "mist") > 0 Then
         emojiUrl = IIf(isDaytime, "https://img.icons8.com/?size=100&id=39432&format=png&color=000000", "https://img.icons8.com/?size=100&id=7tEHHH5dn7A3&format=png&color=000000")
-    ElseIf InStr(wxLower, "hail") > 0 Or InStr(wxLower, "sleet") > 0 Then
-        emojiUrl = IIf(isDaytime, "https://img.icons8.com/?size=100&id=39329&format=png&color=000000", "https://img.icons8.com/?size=100&id=39329&format=png&color=000000")
     ElseIf InStr(wxLower, "sun") > 0 Then
         emojiUrl = IIf(isDaytime, "https://img.icons8.com/?size=100&id=8EUmYhfLPTCF&format=png&color=000000", "https://img.icons8.com/?size=100&id=8EUmYhfLPTCF&format=png&color=000000")
-    ElseIf InStr(wxLower, "overcast") > 0 Or InStr(wxLower, "cast") > 0 Then
-        emojiUrl = IIf(isDaytime, "https://img.icons8.com/?size=100&id=W8fUZZSmXssu&format=png&color=000000", "https://img.icons8.com/?size=100&id=W8fUZZSmXssu&format=png&color=000000")
     End If
 
     ' Replace image
