@@ -28,9 +28,10 @@ Sub InsertWeatherSlide()
     SafeSetText sld, "TimeBox", obsTime
     SafeSetText sld, "TemperatureBox", temperature
     SafeSetText sld, "WeatherBox", weather
-    SafeSetText sld, "HumidityBox", "Humidity: " & humidity
-    SafeSetText sld, "WindBox", "Wind: " & wind
+    SafeSetText sld, "HumidityBox", humidity
+    SafeSetText sld, "WindBox", wind
 
+    Call UpdateCurrentConditionImage(sld, weather)
     Call ClearOldForecastImages(sld)
     Call InsertForecastData(sld)
     Call StartCarouselLoop
@@ -137,7 +138,7 @@ Sub InsertForecastData(sld As Slide)
         ' Add new picture and group it with existing group
         If emojiUrl <> "" Then
             Dim newImg As Shape
-            Set newImg = sld.Shapes.AddPicture(emojiUrl, msoFalse, msoCTrue, 60, 420, 50, 50)
+            Set newImg = sld.Shapes.AddPicture(emojiUrl, msoFalse, msoCTrue, 662.4, 108, 178.56, 194.4)
             newImg.Name = "ForecastImage" & (i + 1)
             
             ' Ungroup the existing group, re-group with new image
@@ -163,11 +164,11 @@ Sub InsertForecastData(sld As Slide)
 
 
         ' Make group visible or hidden
-        Dim groupName As String
-        groupName = "Day" & (i + 1) & "Group"
+        Dim group2Name As String
+        group2Name = "Day" & (i + 1) & "Group"
 
         On Error Resume Next
-        With sld.Shapes(groupName)
+        With sld.Shapes(group2Name)
             .Visible = IIf(i = 0, msoTrue, msoFalse)
         End With
         On Error GoTo 0
@@ -175,10 +176,18 @@ Sub InsertForecastData(sld As Slide)
 End Sub
 
 Sub StartCarouselLoop()
+    LastUpdateTime = Timer
     Do
+        ' Refresh data once every 3600 seconds (1 hour)
+        If Timer - LastUpdateTime >= 3600 Or Timer < LastUpdateTime Then
+            Call InsertWeatherSlide
+            LastUpdateTime = Timer
+        End If
+
         Call AnimateForecastGroups
     Loop
 End Sub
+
 
 Sub AnimateForecastGroups()
     Dim sld As Slide
@@ -195,7 +204,8 @@ Sub AnimateForecastGroups()
             Set seq = sld.TimeLine.MainSequence
             shp.Visible = msoTrue
             seq.AddEffect shp, msoAnimEffectFade, , msoAnimTriggerAfterPrevious
-            Pause 5
+            Pause 10
+            
             shp.Visible = msoFalse
             
         End If
@@ -226,4 +236,46 @@ Sub SafeSetText(sld As Slide, shapeName As String, text As String)
         shp.TextFrame.TextRange.text = text
     End If
 End Sub
+
+Sub UpdateCurrentConditionImage(sld As Slide, weather As String)
+    Dim emojiUrl As String
+    Dim wxLower As String
+    wxLower = LCase(weather)
+
+    ' Determine if it is currently daytime
+    Dim isDaytime As Boolean
+    isDaytime = (Hour(Now) >= 6 And Hour(Now) < 18)
+
+    If InStr(wxLower, "snow") > 0 Or InStr(wxLower, "flurries") > 0 Then
+        emojiUrl = IIf(isDaytime, "https://img.icons8.com/?size=100&id=qlJRoffslNg7&format=png&color=000000", "https://img.icons8.com/?size=100&id=qlJRoffslNg7&format=png&color=000000")
+    ElseIf InStr(wxLower, "clear") > 0 Then
+        emojiUrl = IIf(isDaytime, "https://img.icons8.com/?size=100&id=8EUmYhfLPTCF&format=png&color=000000", "https://img.icons8.com/?size=100&id=Opvt5B6x4fI4&format=png&color=000000")
+    ElseIf InStr(wxLower, "rain") > 0 Or InStr(wxLower, "showers") > 0 Then
+        emojiUrl = IIf(isDaytime, "https://img.icons8.com/?size=100&id=R1kPtXvDMnWj&format=png&color=000000", "https://img.icons8.com/?size=100&id=R1kPtXvDMnWj&format=png&color=000000")
+    ElseIf InStr(wxLower, "cloud") > 0 Then
+        emojiUrl = IIf(isDaytime, "https://img.icons8.com/?size=100&id=zIVmoh4T8wh7&format=png&color=000000", "https://img.icons8.com/?size=100&id=VT8HlhlnhUwL&format=png&color=000000")
+    ElseIf InStr(wxLower, "storm") > 0 Or InStr(wxLower, "thunder") > 0 Then
+        emojiUrl = IIf(isDaytime, "https://img.icons8.com/?size=100&id=6AAyqKfBlzoB&format=png&color=000000", "https://img.icons8.com/?size=100&id=6AAyqKfBlzoB&format=png&color=000000")
+    ElseIf InStr(wxLower, "fog") > 0 Or InStr(wxLower, "haze") > 0 Or InStr(wxLower, "mist") > 0 Then
+        emojiUrl = IIf(isDaytime, "https://img.icons8.com/?size=100&id=39432&format=png&color=000000", "https://img.icons8.com/?size=100&id=7tEHHH5dn7A3&format=png&color=000000")
+    ElseIf InStr(wxLower, "hail") > 0 Or InStr(wxLower, "sleet") > 0 Then
+        emojiUrl = IIf(isDaytime, "https://img.icons8.com/?size=100&id=39329&format=png&color=000000", "https://img.icons8.com/?size=100&id=39329&format=png&color=000000")
+    ElseIf InStr(wxLower, "sun") > 0 Then
+        emojiUrl = IIf(isDaytime, "https://img.icons8.com/?size=100&id=8EUmYhfLPTCF&format=png&color=000000", "https://img.icons8.com/?size=100&id=8EUmYhfLPTCF&format=png&color=000000")
+    ElseIf InStr(wxLower, "overcast") > 0 Or InStr(wxLower, "cast") > 0 Then
+        emojiUrl = IIf(isDaytime, "https://img.icons8.com/?size=100&id=W8fUZZSmXssu&format=png&color=000000", "https://img.icons8.com/?size=100&id=W8fUZZSmXssu&format=png&color=000000")
+    End If
+
+    ' Replace image
+    On Error Resume Next
+    sld.Shapes("CurrentWeatherImage").Delete
+    On Error GoTo 0
+
+    If emojiUrl <> "" Then
+        Dim img As Shape
+        Set img = sld.Shapes.AddPicture(emojiUrl, msoFalse, msoCTrue, 66.96, 268.56, 110.16, 113.76)
+        img.Name = "CurrentWeatherImage"
+    End If
+End Sub
+
 
